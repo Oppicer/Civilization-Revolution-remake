@@ -1,0 +1,182 @@
+{
+  "grass": {
+    "name": "Grassland",
+    "movement_cost": 1,
+    "defense_bonus": 0,
+    "base_yield": {
+      "food": 2,
+      "production": 1,
+      "gold": 0,
+      "science": 0,
+      "culture": 0
+    },
+    "passable": true,
+    "buildable": true,
+    "description": "Basic terrain, fertile land suitable for cities"
+  },
+  "plains": {
+    "name": "Plains",
+    "movement_cost": 1,
+    "defense_bonus": 0,
+    "base_yield": {
+      "food": 1,
+      "production": 2,
+      "gold": 0,
+      "science": 0,
+      "culture": 0
+    },
+    "passable": true,
+    "buildable": true,
+    "description": "Flat terrain with high production potential"
+  },
+  "hills": {
+    "name": "Hills",
+    "movement_cost": 2,
+    "defense_bonus": 1,
+    "base_yield": {
+      "food": 0,
+      "production": 3,
+      "gold": 0,
+      "science": 0,
+      "culture": 0
+    },
+    "passable": true,
+    "buildable": true,
+    "description": "Rough terrain with high production but difficult to traverse"
+  },
+  "forest": {
+    "name": "Forest",
+    "movement_cost": 2,
+    "defense_bonus": 1,
+    "base_yield": {
+      "food": 1,
+      "production": 1,
+      "gold": 0,
+      "science": 1,
+      "culture": 0
+    },
+    "passable": true,
+    "buildable": true,
+    "description": "Wooded area providing production and science"
+  },
+  "jungle": {
+    "name": "Jungle",
+    "movement_cost": 3,
+    "defense_bonus": 1,
+    "base_yield": {
+      "food": 1,
+      "production": 0,
+      "gold": 0,
+      "science": 2,
+      "culture": 0
+    },
+    "passable": true,
+    "buildable": true,
+    "description": "Dense vegetation providing science but hindering movement"
+  },
+  "desert": {
+    "name": "Desert",
+    "movement_cost": 1,
+    "defense_bonus": 0,
+    "base_yield": {
+      "food": 0,
+      "production": 0,
+      "gold": 1,
+      "science": 0,
+      "culture": 0
+    },
+    "passable": true,
+    "buildable": true,
+    "description": "Arid terrain with limited yield"
+  },
+  "tundra": {
+    "name": "Tundra",
+    "movement_cost": 2,
+    "defense_bonus": 0,
+    "base_yield": {
+      "food": 1,
+      "production": 0,
+      "gold": 0,
+      "science": 0,
+      "culture": 1
+    },
+    "passable": true,
+    "buildable": true,
+    "description": "Cold terrain with limited productivity"
+  },
+  "snow": {
+    "name": "Snow",
+    "movement_cost": 3,
+    "defense_bonus": 0,
+    "base_yield": {
+      "food": 0,
+      "production": 0,
+      "gold": 0,
+      "science": 0,
+      "culture": 0
+    },
+    "passable": true,
+    "buildable": false,
+    "description": "Frozen terrain unsuitable for building"
+  },
+  "mountain": {
+    "name": "Mountain",
+    "movement_cost": 99,
+    "defense_bonus": 2,
+    "base_yield": {
+      "food": 0,
+      "production": 2,
+      "gold": 1,
+      "science": 0,
+      "culture": 0
+    },
+    "passable": false,
+    "buildable": false,
+    "description": "Impassable terrain with resource deposits"
+  },
+  "coast": {
+    "name": "Coast",
+    "movement_cost": 1,
+    "defense_bonus": 0,
+    "base_yield": {
+      "food": 1,
+      "production": 0,
+      "gold": 1,
+      "science": 1,
+      "culture": 0
+    },
+    "passable": true,
+    "buildable": false,
+    "description": "Water edge terrain rich in food and gold"
+  },
+  "ocean": {
+    "name": "Ocean",
+    "movement_cost": 99,
+    "defense_bonus": 0,
+    "base_yield": {
+      "food": 1,
+      "production": 0,
+      "gold": 1,
+      "science": 1,
+      "culture": 0
+    },
+    "passable": false,
+    "buildable": false,
+    "description": "Deep water, impassable without naval units"
+  },
+  "lake": {
+    "name": "Lake",
+    "movement_cost": 99,
+    "defense_bonus": 0,
+    "base_yield": {
+      "food": 2,
+      "production": 0,
+      "gold": 0,
+      "science": 0,
+      "culture": 0
+    },
+    "passable": false,
+    "buildable": false,
+    "description": "Freshwater body providing food"
+  }
+}
