@@ -7,14 +7,10 @@ dist/
 build/
 target/
 
-# Logs and temp files
-*.log
-*.tmp
-
 # Environment
 .env
 .env.local
-*.env.*
+.env.*
 
 # Editors
 .vscode/
@@ -25,6 +21,23 @@ __pycache__/
 *.pyc
 *.pyo
 *.pyd
+
+# Logs
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Coverage
+coverage/
+htmlcov/
+.coverage
+
+# Temporary files
+*.tmp
+*.swp
+*.swo
 
 # Compression
 *.zip

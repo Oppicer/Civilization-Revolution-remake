@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Civilization Revolution 3D</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        #game-container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+        }
+        
+        #ui-overlay {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            z-index: 100;
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 15px;
+            border-radius: 10px;
+            min-width: 250px;
+        }
+        
+        #ui-overlay h2 {
+            margin-top: 0;
+            color: #4fc3f7;
+            border-bottom: 1px solid #4fc3f7;
+            padding-bottom: 8px;
+        }
+        
+        .panel {
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #555;
+        }
+        
+        .panel:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+            padding-bottom: 0;
+        }
+        
+        .resource {
+            display: flex;
+            justify-content: space-between;
+            margin: 5px 0;
+        }
+        
+        .btn {
+            background: #2196f3;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            margin: 3px 2px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        
+        .btn:hover {
+            background: #0d8bf2;
+        }
+        
+        .btn-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+        }
+        
+        #turn-indicator {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            z-index: 100;
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 10px 15px;
+            border-radius: 10px;
+            font-weight: bold;
+        }
+        
+        #game-status {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 100;
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 10px 15px;
+            border-radius: 10px;
+            text-align: center;
+        }
+        
+        #unit-info, #city-info {
+            background: rgba(50, 50, 50, 0.8);
+            padding: 10px;
+            border-radius: 5px;
+            margin-top: 8px;
+            display: none;
+        }
+        
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div id="game-container"></div>
+    
+    <div id="ui-overlay">
+        <h2>Civilization Revolution 3D</h2>
+        
+        <div class="panel">
+            <h3>Resources</h3>
+            <div class="resource"><span>Gold:</span><span id="gold">0</span></div>
+            <div class="resource"><span>Food:</span><span id="food">0</span></div>
+            <div class="resource"><span>Production:</span><span id="production">0</span></div>
+            <div class="resource"><span>Science:</span><span id="science">0</span></div>
+            <div class="resource"><span>Culture:</span><span id="culture">0</span></div>
+        </div>
+        
+        <div class="panel">
+            <h3>Current Unit</h3>
+            <div id="unit-info" class="hidden">
+                <div>Type: <span id="unit-type">-</span></div>
+                <div>HP: <span id="unit-hp">-</span></div>
+                <div>Attack: <span id="unit-attack">-</span></div>
+                <div>Defense: <span id="unit-defense">-</span></div>
+                <div>Moves: <span id="unit-moves">-</span></div>
+            </div>
+            <div id="no-unit-selected">No unit selected</div>
+        </div>
+        
+        <div class="panel">
+            <h3>Current City</h3>
+            <div id="city-info" class="hidden">
+                <div>Name: <span id="city-name">-</span></div>
+                <div>Population: <span id="city-population">-</span></div>
+                <div>Production: <span id="city-production">-</span></div>
+                <div>Health: <span id="city-health">-</span></div>
+            </div>
+            <div id="no-city-selected">No city selected</div>
+        </div>
+        
+        <div class="panel">
+            <h3>Actions</h3>
+            <div class="btn-group">
+                <button id="end-turn-btn" class="btn">End Turn</button>
+                <button id="build-unit-btn" class="btn">Build Unit</button>
+                <button id="build-city-btn" class="btn">Build City</button>
+                <button id="research-btn" class="btn">Research</button>
+                <button id="trade-btn" class="btn">Trade</button>
+            </div>
+        </div>
+    </div>
+    
+    <div id="turn-indicator">Player 1's Turn</div>
+    
+    <div id="game-status">Welcome to Civilization Revolution 3D</div>
+
+    <!-- Include Three.js from CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    
+    <!-- Include Socket.IO client -->
+    <script src="/socket.io/socket.io.js"></script>
+    
+    <script>
+        // Client-side game logic
+        document.addEventListener('DOMContentLoaded', () => {
+            const socket = io();
+            
+            // DOM elements
+            const goldEl = document.getElementById('gold');
+            const foodEl = document.getElementById('food');
+            const productionEl = document.getElementById('production');
+            const scienceEl = document.getElementById('science');
+            const cultureEl = document.getElementById('culture');
+            
+            const unitInfoEl = document.getElementById('unit-info');
+            const noUnitSelectedEl = document.getElementById('no-unit-selected');
+            const unitTypeEl = document.getElementById('unit-type');
+            const unitHpEl = document.getElementById('unit-hp');
+            const unitAttackEl = document.getElementById('unit-attack');
+            const unitDefenseEl = document.getElementById('unit-defense');
+            const unitMovesEl = document.getElementById('unit-moves');
+            
+            const cityInfoEl = document.getElementById('city-info');
+            const noCitySelectedEl = document.getElementById('no-city-selected');
+            const cityNameEl = document.getElementById('city-name');
+            const cityPopulationEl = document.getElementById('city-population');
+            const cityProductionEl = document.getElementById('city-production');
+            const cityHealthEl = document.getElementById('city-health');
+            
+            const turnIndicatorEl = document.getElementById('turn-indicator');
+            const gameStatusEl = document.getElementById('game-status');
+            
+            // Button elements
+            const endTurnBtn = document.getElementById('end-turn-btn');
+            const buildUnitBtn = document.getElementById('build-unit-btn');
+            const buildCityBtn = document.getElementById('build-city-btn');
+            const researchBtn = document.getElementById('research-btn');
+            const tradeBtn = document.getElementById('trade-btn');
+            
+            // Socket event handlers
+            socket.on('connect', () => {
+                console.log('Connected to server');
+                gameStatusEl.textContent = 'Connected to game server';
+            });
+            
+            socket.on('disconnect', () => {
+                console.log('Disconnected from server');
+                gameStatusEl.textContent = 'Disconnected from server';
+            });
+            
+            socket.on('game_state', (state) => {
+                console.log('Received game state:', state);
+                updateResources(state.resources || {});
+                updateTurnIndicator(state.currentTurn || 0);
+            });
+            
+            socket.on('player_action', (action) => {
+                console.log('Received player action:', action);
+                gameStatusEl.textContent = `Action received: ${action.type}`;
+            });
+            
+            socket.on('turn_changed', (turn) => {
+                updateTurnIndicator(turn);
+                gameStatusEl.textContent = `Turn changed to player ${turn + 1}`;
+            });
+            
+            // Update UI functions
+            function updateResources(resources) {
+                goldEl.textContent = resources.gold || 0;
+                foodEl.textContent = resources.food || 0;
+                productionEl.textContent = resources.production || 0;
+                scienceEl.textContent = resources.science || 0;
+                cultureEl.textContent = resources.culture || 0;
+            }
+            
+            function updateTurnIndicator(turn) {
+                turnIndicatorEl.textContent = `Player ${turn + 1}'s Turn`;
+            }
+            
+            function updateUnitInfo(unit) {
+                if (unit) {
+                    unitTypeEl.textContent = unit.type || '-';
+                    unitHpEl.textContent = `${unit.hp || 0}/${unit.maxHp || 0}`;
+                    unitAttackEl.textContent = unit.attack || '-';
+                    unitDefenseEl.textContent = unit.defense || '-';
+                    unitMovesEl.textContent = unit.moves || '-';
+                    
+                    unitInfoEl.classList.remove('hidden');
+                    noUnitSelectedEl.style.display = 'none';
+                } else {
+                    unitInfoEl.classList.add('hidden');
+                    noUnitSelectedEl.style.display = 'block';
+                }
+            }
+            
+            function updateCityInfo(city) {
+                if (city) {
+                    cityNameEl.textContent = city.name || '-';
+                    cityPopulationEl.textContent = city.population || '-';
+                    cityProductionEl.textContent = city.production || '-';
+                    cityHealthEl.textContent = `${city.health || 0}/${city.maxHealth || 0}`;
+                    
+                    cityInfoEl.classList.remove('hidden');
+                    noCitySelectedEl.style.display = 'none';
+                } else {
+                    cityInfoEl.classList.add('hidden');
+                    noCitySelectedEl.style.display = 'block';
+                }
+            }
+            
+            // Button event handlers
+            endTurnBtn.addEventListener('click', () => {
+                socket.emit('player_action', {
+                    type: 'end_turn',
+                    payload: {}
+                });
+            });
+            
+            buildUnitBtn.addEventListener('click', () => {
+                socket.emit('player_action', {
+                    type: 'build',
+                    payload: { itemType: 'unit', unitType: 'warrior' }
+                });
+            });
+            
+            buildCityBtn.addEventListener('click', () => {
+                socket.emit('player_action', {
+                    type: 'build',
+                    payload: { itemType: 'city' }
+                });
+            });
+            
+            researchBtn.addEventListener('click', () => {
+                socket.emit('player_action', {
+                    type: 'research',
+                    payload: {}
+                });
+            });
+            
+            tradeBtn.addEventListener('click', () => {
+                socket.emit('player_action', {
+                    type: 'trade',
+                    payload: {}
+                });
+            });
+            
+            // Click handling for the 3D scene
+            document.getElementById('game-container').addEventListener('click', (event) => {
+                // In a real implementation, this would raycast to find what was clicked
+                // For now, we'll just log the click
+                console.log('Game scene clicked at:', event.clientX, event.clientY);
+                
+                // Example of sending a selection action
+                // socket.emit('player_action', {
+                //     type: 'select_entity',
+                //     payload: { x: event.clientX, y: event.clientY }
+                // });
+            });
+            
+            // Initial state
+            updateResources({});
+            updateUnitInfo(null);
+            updateCityInfo(null);
+        });
+    </script>
+</body>
+</html>

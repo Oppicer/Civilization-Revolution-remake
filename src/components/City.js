@@ -1,64 +1,60 @@
 /**
- * City Component
- * Represents a city in the game
+ * City Component for 3D Civilization Revolution
  */
 
 class City {
-  constructor(owner, x, y, name = null) {
-    this.owner = owner; // Player ID that owns the city
-    this.position = { x, y };
+  constructor(name, position, owner) {
     this.name = name || this.generateRandomName();
+    this.position = position; // {x, y, z} coordinates
+    this.owner = owner; // Player ID
+    
+    // City stats
     this.population = 1;
     this.health = 100;
     this.maxHealth = 100;
     
-    // City resources and production
+    // Resources generated per turn
     this.food = 0;
     this.production = 0;
     this.gold = 0;
     this.science = 0;
     this.culture = 0;
     
-    // City defenses
-    this.defense = 3; // Base defense value
-    
     // City development
     this.buildings = [];
-    this.specialists = {
-      scientist: 0,
-      merchant: 0,
-      artist: 0
-    };
+    this.wonders = [];
     
-    // Production queue
+    // Current production
+    this.currentProduction = null;
     this.productionQueue = [];
     
-    // Tiles worked by the city
+    // Tiles under city influence
     this.workedTiles = [];
+    this.claimedTiles = [];
     
-    // Growth requirements
-    this.foodNeededForGrowth = 15;
-    this.foodStored = 0;
+    // Special abilities
+    this.defensiveStrength = 5; // Base defense when attacked
     
-    // Expansion
-    this.tileRadius = 1; // Radius of tiles controlled by the city
-    
-    // Status
-    this.isConnectedToCapital = false;
-    this.isInResistance = false;
-    this.resistanceTurnsLeft = 0;
-    
-    // Wonders
-    this.wondersBuilt = [];
+    // 3D model reference
+    this.mesh = null;
   }
 
-  /**
-   * Generate a random name for the city
-   */
   generateRandomName() {
-    const prefixes = ['New', 'Great', 'Fort', 'Port', 'Mount', 'Lake', 'River', 'Valley', 'Green', 'Golden'];
-    const roots = ['York', 'Paris', 'Rome', 'Athens', 'Alexandria', 'London', 'Berlin', 'Madrid', 'Vienna', 'Dublin'];
-    const suffixes = ['City', 'Town', 'Vale', 'Field', 'Bridge', 'Gate', 'Haven', 'Falls', 'Point', 'Bay'];
+    const prefixes = [
+      'New', 'Great', 'Fort', 'Port', 'Mount', 'Lake', 'River', 'Valley',
+      'Green', 'Golden', 'Silver', 'Iron', 'Stone', 'Oak', 'Pine', 'Cedar'
+    ];
+    
+    const roots = [
+      'York', 'Paris', 'Rome', 'Athens', 'Alexandria', 'London', 'Berlin',
+      'Madrid', 'Vienna', 'Dublin', 'Cairo', 'Beijing', 'Delhi', 'Moscow',
+      'Tokyo', 'Seoul', 'Bangkok', 'Sydney', 'Toronto', 'Lima', 'Cape Town'
+    ];
+    
+    const suffixes = [
+      'City', 'Town', 'Vale', 'Field', 'Bridge', 'Gate', 'Haven', 'Falls',
+      'Point', 'Bay', 'Rest', 'View', 'Spring', 'Grove', 'Hill', 'Cove'
+    ];
     
     const prefix = prefixes[Math.floor(Math.random() * prefixes.length)];
     const root = roots[Math.floor(Math.random() * roots.length)];
@@ -72,9 +68,6 @@ class City {
     }
   }
 
-  /**
-   * Add a building to the city
-   */
   addBuilding(buildingType) {
     if (!this.buildings.includes(buildingType)) {
       this.buildings.push(buildingType);
@@ -84,9 +77,6 @@ class City {
     return false;
   }
 
-  /**
-   * Remove a building from the city
-   */
   removeBuilding(buildingType) {
     const index = this.buildings.indexOf(buildingType);
     if (index !== -1) {
@@ -97,48 +87,60 @@ class City {
     return false;
   }
 
-  /**
-   * Apply effects of a building
-   */
   applyBuildingEffects(buildingType) {
     switch(buildingType) {
       case 'granary':
         this.food += 2;
         break;
+      case 'lighthouse':
+        this.food += 1;
+        this.production += 1;
+        break;
       case 'workshop':
         this.production += 2;
         break;
-      case 'market':
+      case 'grocer':
+        this.food += 1;
+        this.gold += 1;
+        break;
+      case 'marketplace':
+        this.gold += 2;
+        break;
+      case 'bank':
         this.gold += 3;
         break;
       case 'library':
         this.science += 2;
         break;
+      case 'university':
+        this.science += 3;
+        break;
       case 'temple':
         this.culture += 2;
         break;
+      case 'monastery':
+        this.culture += 1;
+        this.science += 1;
+        break;
       case 'barracks':
-        this.defense += 2;
+        this.defensiveStrength += 3;
         break;
       case 'walls':
-        this.defense += 5;
+        this.defensiveStrength += 5;
         this.maxHealth += 50;
-        this.health = this.maxHealth; // Restore health when walls are built
+        this.health = this.maxHealth;
         break;
-      case 'harbor':
-        this.gold += 2;
-        this.production += 1;
-        break;
-      case 'university':
-        this.science += 3;
-        this.culture += 1;
-        break;
-      case 'bank':
-        this.gold += 4;
+      case 'arsenal':
+        this.defensiveStrength += 8;
         break;
       case 'factory':
         this.production += 4;
-        this.science += 1;
+        break;
+      case 'hospital':
+        this.population += Math.floor(this.population * 0.2); // 20% growth
+        break;
+      case 'stock_exchange':
+        this.gold += 5;
         break;
       case 'observatory':
         this.science += 4;
@@ -146,67 +148,68 @@ class City {
       case 'theater':
         this.culture += 3;
         break;
-      case 'monument':
-        this.culture += 2;
+      case 'broadcast_tower':
+        this.culture += 5;
         break;
-      case 'seaport':
-        this.gold += 3;
-        this.production += 2;
-        break;
-      case 'airport':
-        this.gold += 2;
-        this.science += 2;
-        break;
-      case 'spaceship_factory':
-        this.production += 5;
-        this.science += 3;
-        break;
+      default:
+        console.log(`Unknown building type: ${buildingType}`);
     }
   }
 
-  /**
-   * Remove effects of a building
-   */
   removeBuildingEffects(buildingType) {
     switch(buildingType) {
       case 'granary':
         this.food -= 2;
         break;
+      case 'lighthouse':
+        this.food -= 1;
+        this.production -= 1;
+        break;
       case 'workshop':
         this.production -= 2;
         break;
-      case 'market':
+      case 'grocer':
+        this.food -= 1;
+        this.gold -= 1;
+        break;
+      case 'marketplace':
+        this.gold -= 2;
+        break;
+      case 'bank':
         this.gold -= 3;
         break;
       case 'library':
         this.science -= 2;
         break;
+      case 'university':
+        this.science -= 3;
+        break;
       case 'temple':
         this.culture -= 2;
         break;
+      case 'monastery':
+        this.culture -= 1;
+        this.science -= 1;
+        break;
       case 'barracks':
-        this.defense -= 2;
+        this.defensiveStrength -= 3;
         break;
       case 'walls':
-        this.defense -= 5;
+        this.defensiveStrength -= 5;
         this.maxHealth -= 50;
-        // Ensure health doesn't exceed new max
         this.health = Math.min(this.health, this.maxHealth);
         break;
-      case 'harbor':
-        this.gold -= 2;
-        this.production -= 1;
-        break;
-      case 'university':
-        this.science -= 3;
-        this.culture -= 1;
-        break;
-      case 'bank':
-        this.gold -= 4;
+      case 'arsenal':
+        this.defensiveStrength -= 8;
         break;
       case 'factory':
         this.production -= 4;
-        this.science -= 1;
+        break;
+      case 'hospital':
+        this.population = Math.floor(this.population / 1.2); // Reverse 20% growth
+        break;
+      case 'stock_exchange':
+        this.gold -= 5;
         break;
       case 'observatory':
         this.science -= 4;
@@ -214,235 +217,23 @@ class City {
       case 'theater':
         this.culture -= 3;
         break;
-      case 'monument':
-        this.culture -= 2;
-        break;
-      case 'seaport':
-        this.gold -= 3;
-        this.production -= 2;
-        break;
-      case 'airport':
-        this.gold -= 2;
-        this.science -= 2;
-        break;
-      case 'spaceship_factory':
-        this.production -= 5;
-        this.science -= 3;
+      case 'broadcast_tower':
+        this.culture -= 5;
         break;
     }
   }
 
-  /**
-   * Add a specialist to the city
-   */
-  addSpecialist(type) {
-    if (['scientist', 'merchant', 'artist'].includes(type)) {
-      this.specialists[type]++;
-      this.applySpecialistEffect(type);
+  addWonder(wonderType) {
+    if (!this.wonders.includes(wonderType)) {
+      this.wonders.push(wonderType);
+      this.applyWonderEffects(wonderType);
       return true;
     }
     return false;
   }
 
-  /**
-   * Remove a specialist from the city
-   */
-  removeSpecialist(type) {
-    if (['scientist', 'merchant', 'artist'].includes(type) && this.specialists[type] > 0) {
-      this.specialists[type]--;
-      this.removeSpecialistEffect(type);
-      return true;
-    }
-    return false;
-  }
-
-  /**
-   * Apply effect of a specialist
-   */
-  applySpecialistEffect(type) {
-    switch(type) {
-      case 'scientist':
-        this.science += 3;
-        this.gold += 1;
-        break;
-      case 'merchant':
-        this.gold += 3;
-        this.production += 1;
-        break;
-      case 'artist':
-        this.culture += 3;
-        this.science += 1;
-        break;
-    }
-  }
-
-  /**
-   * Remove effect of a specialist
-   */
-  removeSpecialistEffect(type) {
-    switch(type) {
-      case 'scientist':
-        this.science -= 3;
-        this.gold -= 1;
-        break;
-      case 'merchant':
-        this.gold -= 3;
-        this.production -= 1;
-        break;
-      case 'artist':
-        this.culture -= 3;
-        this.science -= 1;
-        break;
-    }
-  }
-
-  /**
-   * Add food to the city's storage
-   */
-  addFood(amount) {
-    this.foodStored += amount;
-    
-    // Check if city grows
-    if (this.foodStored >= this.foodNeededForGrowth) {
-      this.growPopulation();
-    }
-  }
-
-  /**
-   * Grow the city's population
-   */
-  growPopulation() {
-    this.population++;
-    this.foodStored -= this.foodNeededForGrowth;
-    
-    // Increase food needed for next growth
-    this.foodNeededForGrowth = Math.floor(this.foodNeededForGrowth * 1.4);
-    
-    // Expand city radius every few population increases
-    if (this.population % 3 === 0 && this.tileRadius < 3) {
-      this.expandRadius();
-    }
-  }
-
-  /**
-   * Expand the city's radius to work more tiles
-   */
-  expandRadius() {
-    this.tileRadius++;
-  }
-
-  /**
-   * Set a tile to be worked by the city
-   */
-  assignTile(x, y) {
-    // Check if tile is within city radius
-    const distance = Math.abs(this.position.x - x) + Math.abs(this.position.y - y);
-    if (distance <= this.tileRadius) {
-      const tileKey = `${x},${y}`;
-      if (!this.workedTiles.includes(tileKey)) {
-        this.workedTiles.push(tileKey);
-        return true;
-      }
-    }
-    return false;
-  }
-
-  /**
-   * Remove a tile from the city's worked tiles
-   */
-  unassignTile(x, y) {
-    const tileKey = `${x},${y}`;
-    const index = this.workedTiles.indexOf(tileKey);
-    if (index !== -1) {
-      this.workedTiles.splice(index, 1);
-      return true;
-    }
-    return false;
-  }
-
-  /**
-   * Calculate the yield from worked tiles
-   */
-  calculateTileYields(terrainData) {
-    // Reset yields
-    this.food = 0;
-    this.production = 0;
-    this.gold = 0;
-    this.science = 0;
-    this.culture = 0;
-    
-    // Calculate base yields from worked tiles
-    for (const tileKey of this.workedTiles) {
-      const [x, y] = tileKey.split(',').map(Number);
-      
-      // This would normally access the actual terrain data
-      // For now, we'll use a simple calculation
-      if (x !== undefined && y !== undefined) {
-        // Base yields depend on terrain type
-        // This is simplified - in a real game, this would access the actual tile data
-        this.food += 2;
-        this.production += 1;
-        this.gold += 0.5;
-        this.science += 0.5;
-        this.culture += 0.3;
-      }
-    }
-    
-    // Add yields from buildings and specialists
-    // These are already factored into the property values
-  }
-
-  /**
-   * Add a unit to the city's garrison
-   */
-  addToGarrison(unitId) {
-    if (!this.garrison) {
-      this.garrison = [];
-    }
-    
-    if (!this.garrison.includes(unitId)) {
-      this.garrison.push(unitId);
-      // Increase defense when units are garrisoned
-      this.defense += 2;
-      return true;
-    }
-    return false;
-  }
-
-  /**
-   * Remove a unit from the city's garrison
-   */
-  removeFromGarrison(unitId) {
-    if (!this.garrison) return false;
-    
-    const index = this.garrison.indexOf(unitId);
-    if (index !== -1) {
-      this.garrison.splice(index, 1);
-      // Decrease defense when units leave garrison
-      this.defense -= 2;
-      return true;
-    }
-    return false;
-  }
-
-  /**
-   * Add a wonder to the city
-   */
-  addWonder(wonderName) {
-    if (!this.wondersBuilt.includes(wonderName)) {
-      this.wondersBuilt.push(wonderName);
-      this.applyWonderEffect(wonderName);
-      return true;
-    }
-    return false;
-  }
-
-  /**
-   * Apply effect of a wonder
-   */
-  applyWonderEffect(wonderName) {
-    // Wonder effects would be implemented here
-    switch(wonderName) {
+  applyWonderEffects(wonderType) {
+    switch(wonderType) {
       case 'great_library':
         this.science += 5;
         break;
@@ -450,95 +241,97 @@ class City {
         this.gold += 3;
         break;
       case 'lighthouse':
-        this.defense += 3;
+        this.defensiveStrength += 3;
         break;
       case 'hanging_gardens':
         this.food += 4;
+        this.population += 2;
         break;
       case 'oracle':
         this.culture += 5;
+        this.science += 2;
         break;
       case 'pyramids':
         this.production += 4;
+        this.maxHealth += 100;
+        this.health = this.maxHealth;
         break;
       case 'great_wall':
-        this.defense += 10;
+        this.defensiveStrength += 10;
         break;
       case 'statue_of_zeus':
-        this.defense += 5;
+        this.defensiveStrength += 5;
         break;
+      case 'temple_of_artemis':
+        this.culture += 3;
+        this.gold += 2;
+        break;
+      case 'mausoleum_at_halicarnassus':
+        this.culture += 4;
+        this.science += 1;
+        break;
+      case 'alexandria_library':
+        this.science += 7;
+        break;
+      case 'parthenon':
+        this.culture += 6;
+        break;
+      case 'petra':
+        this.gold += 5;
+        this.food += 2;
+        break;
+      case 'chichen_itza':
+        this.culture += 4;
+        this.defensiveStrength += 5;
+        break;
+      default:
+        console.log(`Unknown wonder type: ${wonderType}`);
     }
   }
 
-  /**
-   * Check if city can build something
-   */
-  canBuild(itemType) {
-    // This would check if the city has required buildings, techs, etc.
-    // For now, just return true
-    return true;
-  }
+  // Calculate resources generated per turn
+  calculateTurnResources() {
+    // Base resources
+    let resources = {
+      food: this.food,
+      production: this.production,
+      gold: this.gold,
+      science: this.science,
+      culture: this.culture
+    };
 
-  /**
-   * Queue an item for production
-   */
-  queueProduction(itemType) {
-    if (this.canBuild(itemType)) {
-      this.productionQueue.push(itemType);
-      return true;
+    // Add resources from worked tiles
+    for (const tile of this.workedTiles) {
+      resources.food += tile.food || 0;
+      resources.production += tile.production || 0;
+      resources.gold += tile.gold || 0;
+      resources.science += tile.science || 0;
+      resources.culture += tile.culture || 0;
     }
-    return false;
+
+    // Population-related adjustments
+    resources.food -= this.population; // Food consumption
+    
+    return resources;
   }
 
-  /**
-   * Remove an item from the production queue
-   */
-  dequeueProduction(itemType) {
-    const index = this.productionQueue.indexOf(itemType);
-    if (index !== -1) {
-      this.productionQueue.splice(index, 1);
-      return true;
-    }
-    return false;
+  // Add population to the city
+  addPopulation(amount) {
+    this.population += amount;
+    // As population grows, more tiles can be worked
+    this.expandWorkableArea();
   }
 
-  /**
-   * Process city turns - called each turn
-   */
-  processTurn() {
-    // Calculate tile yields
-    // This would normally receive terrain data as parameter
-    this.calculateTileYields();
-    
-    // Add specialist yields
-    this.science += this.specialists.scientist * 3;
-    this.gold += this.specialists.merchant * 3;
-    this.culture += this.specialists.artist * 3;
-    
-    // Add food to storage for growth
-    this.addFood(this.food);
-    
-    // Ensure positive values
-    this.food = Math.max(0, this.food);
-    this.production = Math.max(0, this.production);
-    this.gold = Math.max(0, this.gold);
-    this.science = Math.max(0, this.science);
-    this.culture = Math.max(0, this.culture);
-    
-    // Handle resistance status
-    if (this.isInResistance) {
-      this.resistanceTurnsLeft--;
-      if (this.resistanceTurnsLeft <= 0) {
-        this.isInResistance = false;
-      }
-    }
+  // Expand the area of tiles that can be worked
+  expandWorkableArea() {
+    // In a real implementation, this would add more tiles to the workedTiles array
+    // based on the city's population and technological advances
   }
 
-  /**
-   * Damage the city
-   */
-  takeDamage(amount) {
-    this.health -= amount;
+  // Take damage when attacked
+  takeDamage(damage) {
+    this.health -= damage;
+    
     if (this.health <= 0) {
       this.health = 0;
       return true; // City destroyed
@@ -546,31 +339,59 @@ class City {
     return false; // City still alive
   }
 
-  /**
-   * Heal the city
-   */
+  // Heal the city
   heal(amount) {
     this.health = Math.min(this.maxHealth, this.health + amount);
   }
 
-  /**
-   * Check if city is connected to capital
-   */
-  isConnected() {
-    return this.isConnectedToCapital;
+  // Add to production queue
+  addToProductionQueue(itemType) {
+    this.productionQueue.push({
+      type: itemType,
+      turnsRemaining: this.getProductionTime(itemType),
+      progress: 0
+    });
   }
 
-  /**
-   * Get city's total yield per turn
-   */
-  getTotalYield() {
-    return {
-      food: this.food,
-      production: this.production,
-      gold: this.gold,
-      science: this.science,
-      culture: this.culture
+  // Get the number of turns needed to produce an item
+  getProductionTime(itemType) {
+    const baseTimes = {
+      warrior: 5,
+      archer: 5,
+      settler: 8,
+      worker: 6,
+      scout: 4,
+      spearman: 6,
+      cavalry: 7,
+      catapult: 8,
+      granary: 10,
+      workshop: 12,
+      marketplace: 15,
+      library: 12,
+      temple: 10,
+      barracks: 8,
+      walls: 20
     };
+    
+    return baseTimes[itemType] || 10; // Default to 10 turns
+  }
+
+  // Process a turn for the city
+  processTurn() {
+    // Process production
+    if (this.productionQueue.length > 0) {
+      const currentProduction = this.productionQueue[0];
+      currentProduction.progress += this.production;
+      
+      if (currentProduction.progress >= currentProduction.turnsRemaining * this.production) {
+        // Item completed
+        this.productionQueue.shift();
+        // In a real game, we would add the completed item to the city or player
+      }
+    }
+    
+    // Calculate and return resources generated this turn
+    return this.calculateTurnResources();
   }
 }
 
