@@ -1,12 +1,14 @@
 /**
- * Unit Component
- * Represents a game unit (warrior, settler, etc.)
+ * Unit Component for 3D Civilization Revolution
  */
+
 class Unit {
-  constructor(type, owner, x, y) {
-    this.type = type; // warrior, settler, worker, scout, etc.
-    this.owner = owner; // player ID
-    this.position = {x, y};
+  constructor(type, position, owner) {
+    this.type = type; // warrior, archer, settler, etc.
+    this.position = position; // {x, y, z} coordinates
+    this.owner = owner; // Player ID
+    
+    // Unit stats
     this.health = 100;
     this.maxHealth = 100;
     this.attack = this.getDefaultAttack(type);
@@ -16,93 +18,108 @@ class Unit {
     this.range = this.getDefaultRange(type);
     this.level = 1;
     this.experience = 0;
-    this.upgradeThreshold = 100;
-    this.actionsRemaining = 1;
-    this.promoted = false;
+    
+    // 3D model reference
+    this.mesh = null;
+    
+    // Actions
+    this.actionPoints = 2;
+    this.maxActionPoints = 2;
   }
 
-  getDefaultAttack(unitType) {
-    const attackValues = {
-      'warrior': 10,
-      'archer': 8,
-      'scout': 5,
-      'settler': 3,
-      'worker': 2,
-      'spearman': 12,
-      'cavalry': 15
+  getDefaultAttack(type) {
+    const attacks = {
+      warrior: 15,
+      archer: 10,
+      settler: 5,
+      worker: 3,
+      scout: 8,
+      spearman: 12,
+      cavalry: 18,
+      catapult: 20
     };
-    return attackValues[unitType] || 5;
+    return attacks[type] || 10;
   }
 
-  getDefaultDefense(unitType) {
-    const defenseValues = {
-      'warrior': 5,
-      'archer': 3,
-      'scout': 2,
-      'settler': 1,
-      'worker': 1,
-      'spearman': 8,
-      'cavalry': 4
+  getDefaultDefense(type) {
+    const defenses = {
+      warrior: 8,
+      archer: 5,
+      settler: 3,
+      worker: 2,
+      scout: 4,
+      spearman: 10,
+      cavalry: 6,
+      catapult: 5
     };
-    return defenseValues[unitType] || 3;
+    return defenses[type] || 5;
   }
 
-  getDefaultMovement(unitType) {
-    const movementValues = {
-      'warrior': 2,
-      'archer': 2,
-      'scout': 3,
-      'settler': 2,
-      'worker': 2,
-      'spearman': 2,
-      'cavalry': 4
+  getDefaultMovement(type) {
+    const movements = {
+      warrior: 2,
+      archer: 2,
+      settler: 1,
+      worker: 1,
+      scout: 3,
+      spearman: 2,
+      cavalry: 4,
+      catapult: 1
     };
-    return movementValues[unitType] || 2;
+    return movements[type] || 2;
   }
 
-  getDefaultRange(unitType) {
-    const rangeValues = {
-      'warrior': 1,
-      'archer': 2,
-      'scout': 1,
-      'settler': 1,
-      'worker': 1,
-      'spearman': 1,
-      'cavalry': 1
+  getDefaultRange(type) {
+    const ranges = {
+      warrior: 1,
+      archer: 2,
+      settler: 1,
+      worker: 1,
+      scout: 1,
+      spearman: 1,
+      cavalry: 1,
+      catapult: 3
     };
-    return rangeValues[unitType] || 1;
+    return ranges[type] || 1;
   }
 
-  takeDamage(amount) {
-    this.health -= amount;
+  takeDamage(damage) {
+    const actualDamage = Math.max(0, damage - this.defense / 2);
+    this.health -= actualDamage;
+    
     if (this.health <= 0) {
       this.health = 0;
-      return true; // Unit is destroyed
+      return true; // Unit destroyed
     }
-    return false;
+    return false; // Unit still alive
   }
 
   heal(amount) {
     this.health = Math.min(this.maxHealth, this.health + amount);
   }
 
-  move(x, y) {
-    if (this.movement > 0) {
-      this.position = {x, y};
-      this.movement--;
+  canPerformAction() {
+    return this.actionPoints > 0;
+  }
+
+  performAction() {
+    if (this.actionPoints > 0) {
+      this.actionPoints--;
       return true;
     }
     return false;
   }
 
   resetTurn() {
+    this.actionPoints = this.maxActionPoints;
     this.movement = this.maxMovement;
-    this.actionsRemaining = 1;
   }
 
   gainExperience(amount) {
     this.experience += amount;
-    if (this.experience >= this.upgradeThreshold) {
+    // Level up if experience threshold reached
+    const expThreshold = this.level * 100;
+    if (this.experience >= expThreshold) {
       this.levelUp();
     }
   }
@@ -113,19 +130,78 @@ class Unit {
     this.defense += 1;
     this.maxHealth += 10;
     this.health = this.maxHealth;
-    this.upgradeThreshold = Math.floor(this.upgradeThreshold * 1.5);
   }
 
-  canPerformAction() {
-    return this.actionsRemaining > 0;
-  }
-
-  performAction() {
-    if (this.actionsRemaining > 0) {
-      this.actionsRemaining--;
+  moveTo(newPosition) {
+    if (this.movement > 0) {
+      this.position = {...newPosition};
+      this.movement--;
       return true;
     }
     return false;
+  }
+
+  getValidMovePositions(gameMap) {
+    // Calculate all positions this unit can move to based on movement points
+    // This would involve pathfinding on the hex grid
+    const positions = [];
+    
+    // For simplicity, just return adjacent positions
+    // In a real implementation, this would use pathfinding algorithms
+    const directions = [
+      {x: 1, y: 0, z: -1}, {x: 1, y: -1, z: 0}, {x: 0, y: -1, z: 1},
+      {x: -1, y: 0, z: 1}, {x: -1, y: 1, z: 0}, {x: 0, y: 1, z: -1}
+    ];
+    
+    for (const dir of directions) {
+      const newPos = {
+        x: this.position.x + dir.x,
+        y: this.position.y + dir.y,
+        z: this.position.z + dir.z
+      };
+      
+      // Check if position is valid (exists on map, not occupied, etc.)
+      if (this.isValidPosition(newPos, gameMap)) {
+        positions.push(newPos);
+      }
+    }
+    
+    return positions;
+  }
+
+  isValidPosition(position, gameMap) {
+    // Check if position is within map bounds
+    // Check if position is not occupied by another unit
+    // Check if terrain is passable for this unit type
+    return true; // Simplified for now
+  }
+
+  getAttackablePositions(gameMap) {
+    // Calculate all positions this unit can attack
+    const positions = [];
+    
+    // For ranged units, find positions within range
+    // For melee units, find adjacent positions
+    const directions = [
+      {x: 1, y: 0, z: -1}, {x: 1, y: -1, z: 0}, {x: 0, y: -1, z: 1},
+      {x: -1, y: 0, z: 1}, {x: -1, y: 1, z: 0}, {x: 0, y: 1, z: -1}
+    ];
+    
+    for (let r = 1; r <= this.range; r++) {
+      for (const dir of directions) {
+        const newPos = {
+          x: this.position.x + dir.x * r,
+          y: this.position.y + dir.y * r,
+          z: this.position.z + dir.z * r
+        };
+        
+        if (this.isValidPosition(newPos, gameMap)) {
+          positions.push(newPos);
+        }
+      }
+    }
+    
+    return positions;
   }
 }
 
